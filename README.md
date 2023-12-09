@@ -41,9 +41,53 @@ resolve({
 })
 ```
 
+## 3. 获取音频文件的内部信息（专辑名称，专辑图片，歌手，歌名等）与 音频文件的播放时长都获取
 
+```ts
+/**
+ * @description 把秒钟转换成时分秒格式,为了尽量在切换npm包后不影响原项目的代码而保留该名称方法
+ * @param second number 多少秒
+ * @param isLimit 是否存在24小时的上限
+ * @returns 返回 string 00:00:00
+ */
+getAudioFileTime(file:{raw:any},cb:()=>{})
+return {
+	...file,// 入参的文件
+	album, // 专辑名称
+	songName, // 歌曲名称
+	singer, // 歌手名称
+	imageBase64, // 图片
+	time // 歌曲时长
+}
+```
 
-## 3. 判断基础类型 is
+## 4. 把秒钟转换成时分秒格式
+
+```ts
+/**
+ * 
+ * @param second number 多少秒
+ * @param isLimit 是否存在24小时的上限
+ * @returns 返回 string 00:00:00
+ * @description 把秒钟转换成时分秒格式
+ */
+secondToTime(second:number,isLimit?:boolean):string
+```
+
+## 5. 把时间(00:00:00)转成秒钟
+
+```ts
+/**
+ * 
+ * @param time 00:00:00 格式的时间
+ * @param num 返回的秒钟值是传入的格式时间的多少倍数，默认 1
+ * @returns number 返回转换后的秒钟
+ * @description 把时间(00:00:00)转成秒钟
+ */
+ timeToSecond(time:stirng,num=1):number
+```
+
+## 6. 判断基础类型 is
 
 ### 使用方法：
 
@@ -59,7 +103,7 @@ is(val:unknown, type:string):boolean
 
 
 
-## 4. 判断是否为undefined isDef
+## 7. 判断是否为undefined isDef
 
 ### 使用方法：
 
@@ -72,7 +116,7 @@ is(val:unknown, type:string):boolean
 isDef(val:unknown):boolean
 ```
 
-## 5. 判断是否为对象 isObject 
+## 8. 判断是否为对象 isObject 
 
 ### 使用方法：
 
@@ -85,7 +129,7 @@ isDef(val:unknown):boolean
 isObject(val:any):boolean
 ```
 
-## 6. 判断是否没有值 isEmpty 
+## 9. 判断是否没有值 isEmpty 
 
 ### 使用方法：
 
@@ -98,7 +142,7 @@ isObject(val:any):boolean
 isEmpty(val:unknown):boolean
 ```
 
-## 7. 判断是否为Null或者undefined isNullAndUnDef 
+## 10. 判断是否为Null或者undefined isNullAndUnDef 
 
 ### 使用方法：
 
@@ -111,7 +155,7 @@ isEmpty(val:unknown):boolean
 isNullAndUnDef(val:unknown):boolean
 ```
 
-## 8. 判断是否为url isUrl 
+## 11. 判断是否为url isUrl 
 
 ### 使用方法：
 
@@ -126,3 +170,30 @@ isUrl(path:string):boolean
 
 
 
+## 12. 把秒钟转换成时分秒格式,为了尽量在切换npm包后不影响原项目的代码而保留该名称方法 
+
+```js
+/**
+ * 
+ * @param second number 多少秒
+ * @param isLimit 是否存在24小时的上限
+ * @returns 返回 string 00:00:00
+ * @description 把秒钟转换成时分秒格式
+ */
+convertSongDuration(second:number,isLimit?:boolean):string
+```
+
+## 12. 把时间(00:00:00)转成秒钟,为了尽量在切换npm包后不影响原项目的代码而保留该名称方法 
+
+```js
+/**
+ * 
+ * @param time 00:00:00 格式的时间
+ * @param num 返回的秒钟值是传入的格式时间的多少倍数，默认 1
+ * @returns number 返回转换后的秒钟
+ * @description 把时间(00:00:00)转成秒钟
+ */
+ timeToSec(time:stirng,num=1):number
+```
+
+## 

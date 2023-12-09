@@ -1,19 +1,27 @@
 
 /**
  * 
- * @param content 文件，form-data
+ * @param file 文件，input change事件返回的参数，入参只能为一个音频文件
  * @returns promise {singer, base64String} 歌手，base64格式的专辑图片
  * @description 解析音频文件的详情（专辑名称，歌手名称，专辑图片...）
+ * @author gxc
  */
-const parseAudioInfo = (content:any)=>{
+const parseAudioInfo = (file:{raw:any})=>{
   return new Promise((resolve:any,reject:any)=>{
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const jsmediatags = require('./jsmediatags.min.js')
+    const content = file.raw
     let album = ''
     let name = ''
     let singer =''
     let imageBase64 = ''
-    jsmediatags.read(content, {
+    if(!content) resolve({
+      name, // 歌曲名称
+      album, // 专辑名称
+      singer, // 歌手名称
+      imageBase64, // 专辑图片
+    })
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const jsmediatags = require('./jsmediatags.min.js')
+    jsmediatags.read(file.raw, {
       onSuccess: function(result:any) {
         album = result.tags.album
         name = result.tags.title
@@ -48,11 +56,12 @@ const parseAudioInfo = (content:any)=>{
 
 /**
  * 
- * @param content 文件 form-data
+ * @param file 文件 input change事件返回的参数，入参只能为一个音频文件
  * @returns promise {duration:number} 时长
  * @description 解析音频文件时长
+ * @author gxc
  */
-const parseAudioDuration = (content:any)=>{
+const parseAudioDuration = (file:{raw:any})=>{
   // 使用new Audio解析音频文件，会比较快，但是对aac格式的文件解析不准确，相差还挺大
   // 使用new AudioContext解析音频文件，速度比较慢，但是对aac格式的文件解析准确。
 
@@ -62,6 +71,10 @@ const parseAudioDuration = (content:any)=>{
   // 一次解析10首MP3文件：Audio：1000ms、AudioContext：3500ms
   // 一次解析50首MP3文件：Audio：3800ms、AudioContext：15000ms
   return new Promise((resolve:any)=>{
+    const content = file.raw
+    if(!content) resolve({
+      duration:0
+    })
     let duration = 0
     // 解析.aac文件
     if (content.type === "audio/vnd.dlna.adts") {
@@ -105,48 +118,106 @@ const parseAudioDuration = (content:any)=>{
 }
 
 /**
- * @description 获取音频文件的时长
- * @param {{time: number, raw: any}} 音频文件本地选中后的回调
+ * @description 获取音频文件的内部信息（专辑名称，专辑图片，歌手，歌名等）与 音频文件的播放时长
+ * @param file 通过 input change事件返回的参数，入参只能为一个音频文件
  * @param {function} 回调
- * @return {file} 把入参的file返回出去
+ * @return {file} 把入参的file返回出去，把
  * @author gxc
  */
 export const getAudioFileTime = async (
-  file: { time: number; raw: any,singer:string,imageBase64:any },
+  file: {raw: any},
   callback?: any
 ) => {
+  const newFile:any = {...file}
   // 解析媒体的信息（专辑名称，歌手名称，专辑图片...）
   const content: any = file.raw;
   const audioInfo:any = await parseAudioInfo(content)
-  file.singer = audioInfo?.singer
-  file.imageBase64 = audioInfo?.imageBase64
+  newFile.album = audioInfo?.album
+  newFile.songName = audioInfo?.name
+  newFile.singer = audioInfo?.singer
+  newFile.imageBase64 = audioInfo?.imageBase64
   const audioDuration:any = await parseAudioDuration(content)
-  file.time = audioDuration.duration;
+  newFile.time = audioDuration.duration;
   callback?.()
-  return file;
+  return newFile;
 };
-// 是否为音乐播放任务
-export const isMusicTask = (task: any) => {
-  return (
-    task.type === 10 ||
-    task.type === 1 ||
-    (task.type === 4 && task.fast_sound?.type == 1) ||
-    (task.type === 4 && task.sound_source?.type == 1)
-  );
-};
-// 是否为音源采集任务
-export const isCollectSoundTask = (task: any) => {
-  return (
-    task.type === 2 ||
-    task.type === 3 ||
-    task.type === 12 ||
-    task.type === 13 ||
-    (task.type === 4 && task.fast_sound?.type == 2) ||
-    (task.type === 4 && task.sound_source?.type == 2) ||
-    (task.type === 4 && task.fast_sound?.type == 3) ||
-    (task.type === 4 && task.sound_source?.type == 3)
-  );
-};
+
+/**
+ * 
+ * @param second number 多少秒
+ * @param isLimit 是否存在24小时的上限
+ * @returns 返回 string 00:00:00
+ * @description 把秒钟转换成时分秒格式,为了尽量在切换npm包后不影响原项目的代码而保留该名称方法
+ */
+export const convertSongDuration = (second: number, isLimit?: boolean)=> {
+  if (!second || second === 0) {
+    return "00:00:00";
+  }
+  const h = Math.floor(second / 3600) < 10 ? "0" + Math.floor(second / 3600) : Math.floor(second / 3600);
+  let m = Math.floor((second / 60) % 60) < 10 ? "0" + Math.floor((second / 60) % 60) : Math.floor((second / 60) % 60);
+  let s = Math.floor(second % 60) < 10 ? "0" + Math.floor(second % 60) : Math.floor(second % 60);
+
+  if (isLimit && Number(h) > 23) return "23:59:59";
+
+  if (Number(m) > 59) m = 59;
+
+  if (Number(s) > 59) s = 59;
+
+  return h + ":" + m + ":" + s;
+}
+/**
+ * 
+ * @param second number 多少秒
+ * @param isLimit 是否存在24小时的上限
+ * @returns 返回 string 00:00:00
+ * @description 把秒钟转换成时分秒格式
+ */
+export const secondToTime = (second: number, isLimit?: boolean)=> {
+  if (!second || second === 0) {
+    return "00:00:00";
+  }
+  const h = Math.floor(second / 3600) < 10 ? "0" + Math.floor(second / 3600) : Math.floor(second / 3600);
+  let m = Math.floor((second / 60) % 60) < 10 ? "0" + Math.floor((second / 60) % 60) : Math.floor((second / 60) % 60);
+  let s = Math.floor(second % 60) < 10 ? "0" + Math.floor(second % 60) : Math.floor(second % 60);
+
+  if (isLimit && Number(h) > 23) return "23:59:59";
+
+  if (Number(m) > 59) m = 59;
+
+  if (Number(s) > 59) s = 59;
+
+  return h + ":" + m + ":" + s;
+}
+/**
+ * 
+ * @param time 00:00:00 格式的时间
+ * @param num 返回的秒钟值是传入的格式时间的多少倍数，默认 1
+ * @returns number 返回转换后的秒钟
+ * @description 把时间(00:00:00)转成秒钟，为了尽量在切换npm包后不影响原项目的代码而保留该名称方法
+ */
+export const timeToSec = (time: string, num = 1)=> {
+  if(!time) return 0
+  const hour = Number(time.split(":")[0]);
+  const min = Number(time.split(":")[1]);
+  const sec = Number(time.split(":")[2]);
+  const s = Number(hour * 3600) + Number(min * 60) + Number(sec);
+  return s * num;
+}
+/**
+ * 
+ * @param time 00:00:00 格式的时间
+ * @param num 返回的秒钟值是传入的格式时间的多少倍数，默认 1
+ * @returns number 返回转换后的秒钟
+ * @description 把时间(00:00:00)转成秒钟
+ */
+export const timeToSecond = (time: string, num = 1)=> {
+  if(!time) return 0
+  const hour = Number(time.split(":")[0]);
+  const min = Number(time.split(":")[1]);
+  const sec = Number(time.split(":")[2]);
+  const s = Number(hour * 3600) + Number(min * 60) + Number(sec);
+  return s * num;
+}
 
 
 // 各种类型判断
