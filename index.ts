@@ -9,10 +9,14 @@ const parseAudioInfo = (content:any)=>{
   return new Promise((resolve:any,reject:any)=>{
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const jsmediatags = require('./jsmediatags.min.js')
+    let album = ''
+    let name = ''
     let singer =''
     let imageBase64 = ''
     jsmediatags.read(content, {
       onSuccess: function(result:any) {
+        album = result.tags.album
+        name = result.tags.title
         singer = result.tags.artist
         if(result.tags.picture){
           const { data, format } = result.tags.picture;
@@ -23,14 +27,18 @@ const parseAudioInfo = (content:any)=>{
           imageBase64 = `data:${format};base64,${window.btoa(base64String)}`;
         }
         resolve({
-          singer,
-          imageBase64,
+          name, // 歌曲名称
+          album, // 专辑名称
+          singer, // 歌手名称
+          imageBase64, // 专辑图片
         })
       },
       onError: function(error:any) {
         resolve({
-          singer,
-          imageBase64,
+          name, // 歌曲名称
+          album, // 专辑名称
+          singer, // 歌手名称
+          imageBase64, // 专辑图片
         })
         console.log(':(', error.type, error.info);
       }
@@ -139,3 +147,118 @@ export const isCollectSoundTask = (task: any) => {
     (task.type === 4 && task.sound_source?.type == 3)
   );
 };
+
+
+// 各种类型判断
+
+const toString = Object.prototype.toString;
+
+/**
+ * 
+ * @param val 待判断的值
+ * @param type 判断的类型
+ * @returns 返回 true or false
+ */
+export function is(val: unknown, type: string) {
+  return toString.call(val) === `[object ${type}]`;
+}
+
+/**
+ * 
+ * @param val 待判断的值
+ * @returns boolean
+ */
+export function isDef<T = unknown>(val?: T): val is T {
+  return typeof val !== 'undefined';
+}
+
+export function isUnDef<T = unknown>(val?: T): val is T {
+  return !isDef(val);
+}
+
+export function isObject(val: any): val is Record<any, any> {
+  return val !== null && is(val, 'Object');
+}
+
+export function isEmpty<T = unknown>(val: T): val is T {
+  if (isArray(val) || isString(val)) {
+    return val.length === 0;
+  }
+
+  if (val instanceof Map || val instanceof Set) {
+    return val.size === 0;
+  }
+
+  if (isObject(val)) {
+    return Object.keys(val).length === 0;
+  }
+
+  return false;
+}
+
+export function isDate(val: unknown): val is Date {
+  return is(val, 'Date');
+}
+
+export function isNull(val: unknown): val is null {
+  return val === null;
+}
+
+export function isNullAndUnDef(val: unknown): val is null | undefined {
+  return isUnDef(val) && isNull(val);
+}
+
+export function isNullOrUnDef(val: unknown): val is null | undefined {
+  return isUnDef(val) || isNull(val);
+}
+
+export function isNumber(val: unknown): val is number {
+  return is(val, 'Number');
+}
+
+export function isPromise<T = any>(val: unknown): val is Promise<T> {
+  return is(val, 'Promise') && isObject(val) && isFunction(val.then) && isFunction(val.catch);
+}
+
+export function isString(val: unknown): val is string {
+  return is(val, 'String');
+}
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+export function isFunction(val: unknown): val is Function {
+  return typeof val === 'function';
+}
+
+export function isBoolean(val: unknown): val is boolean {
+  return is(val, 'Boolean');
+}
+
+export function isRegExp(val: unknown): val is RegExp {
+  return is(val, 'RegExp');
+}
+
+export function isArray(val: any): val is Array<any> {
+  return val && Array.isArray(val);
+}
+
+export function isWindow(val: any): val is Window {
+  return typeof window !== 'undefined' && is(val, 'Window');
+}
+
+export function isElement(val: unknown): val is Element {
+  return isObject(val) && !!val.tagName;
+}
+
+export function isMap(val: unknown): val is Map<any, any> {
+  return is(val, 'Map');
+}
+
+export const isServer = typeof window === 'undefined';
+
+export const isClient = !isServer;
+
+export function isUrl(path: string): boolean {
+  const reg =
+    /(((^https?:(?:\/\/)?)(?:[-;:&=\\+\\$,\w]+@)?[A-Za-z0-9.-]+(?::\d+)?|(?:www.|[-;:&=\\+\\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\\+~%\\/.\w-_]*)?\??(?:[-\\+=&;%@.\w_]*)#?(?:[\w]*))?)$/;
+  return reg.test(path);
+}
